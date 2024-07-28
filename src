@@ -1,0 +1,80 @@
+# Importe as bibliotecas necessárias
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from wordcloud import WordCloud
+from textblob import TextBlob
+import gdown
+from datetime import datetime
+
+# URL do arquivo CSV no Google Drive
+file_url = "https://drive.google.com/uc?id=1_TPCGMVyhOhw0Jyl7ICIEPG3OnNta-EV"
+
+# Carregue os dados diretamente do Google Drive
+data = pd.read_csv(file_url)
+
+# AED: Realize uma Análise Exploratória de Dados
+print("\nInformações do conjunto de dados:")
+print(data.info())
+
+# Verifique se há valores nulos
+print("\nValores nulos no conjunto de dados:")
+print(data.isnull().sum())
+
+# Converta as colunas de data para o formato datetime
+data['paper_version_release_date'] = pd.to_datetime(data['paper_version_release_date'])
+data['paper_ondatabase_since'] = pd.to_datetime(data['paper_ondatabase_since'])
+data['paper_ondatabase_latest'] = pd.to_datetime(data['paper_ondatabase_latest'])
+
+# Identificação de tendências ao longo do tempo
+plt.figure(figsize=(12, 6))
+sns.countplot(x=data['paper_version_release_date'].dt.year, palette='viridis')
+plt.title('Número de artigos lançados por ano')
+plt.xlabel('Ano de lançamento')
+plt.ylabel('Contagem')
+plt.xticks(rotation=45)
+plt.show()
+
+# Principais tópicos discutidos nos artigos (Wordcloud)
+plt.figure(figsize=(12, 8))
+wordcloud = WordCloud(width=800, height=600, background_color='white').generate(' '.join(data['paper_subject'].astype(str)))
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.title('Wordcloud dos tópicos dos artigos')
+plt.axis('off')
+plt.show()
+
+# Análise de Sentimento
+data['paper_abstract'] = data['paper_abstract'].astype(str)
+data['sentiment'] = data['paper_abstract'].apply(lambda x: TextBlob(x).sentiment.polarity)
+
+# Visualização do Sentimento
+plt.figure(figsize=(10, 6))
+with pd.option_context('mode.use_inf_as_na', True):
+    sns.histplot(data['sentiment'], bins=20, kde=True, color='skyblue')
+plt.title('Distribuição do Sentimento dos Resumos dos Artigos')
+plt.xlabel('Sentimento')
+plt.ylabel('Contagem')
+plt.show()
+
+# Criação de um relatório
+
+# Número total de artigos
+total_articles = data.shape[0]
+
+# Data do conjunto de dados
+data_oldest = data['paper_version_release_date'].min()
+data_recent = data['paper_version_release_date'].max()
+
+# Número de tópicos únicos
+total_topics = data['paper_subject'].nunique()
+
+# Sentimento médio
+average_sentiment = data['sentiment'].mean()
+
+# Relatório
+print("\nRelatório:")
+print("Número total de artigos:", total_articles)
+print("Data mais antiga do conjunto de dados:", data_oldest.strftime('%d-%m-%Y'))
+print("Data mais recente do conjunto de dados:", data_recent.strftime('%d-%m-%Y'))
+print("Número de tópicos únicos:", total_topics)
+print("Sentimento médio dos resumos dos artigos:", average_sentiment)
